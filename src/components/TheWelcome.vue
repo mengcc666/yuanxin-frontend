@@ -18,7 +18,9 @@ export default {
       searchInputData: "",
       displayTableData: [],
       currentSortInfo: null,
-      meetSearchData: []
+      meetSearchData: [],
+      // filter
+      searchFilterForm: []
     };
   },
   methods: {
@@ -30,28 +32,19 @@ export default {
       this.count = this.legalTableData.length
       this.params.page = 1
       this.updateTableDisplay()
-      // this.displayTableData = this.originTableData.slice(startIndex, endIndex)
     },
     getMyExcelData(e) {
       let fileObj = e.target.files[0];
-      // console.log(fileObj)
       const fileReader = new FileReader();
       fileReader.readAsArrayBuffer(fileObj);
       fileReader.onload = (e) => {
         const fileData = e.target.result;
         const workbook = XLSX.read(fileData, { type: "binary" });
-        // console.log(workbook)
         const workbookSheetName = workbook.SheetNames[0];
         const sheetJson = XLSX.utils.sheet_to_json(workbook.Sheets[workbookSheetName]);
-        // console.log(this);
         this.originTableData = sheetJson
         this.legalTableData = this.originTableData
-        // this.tableData.sort(this.sortByAsc("ID"))
-        // var startIndex = (this.params.page - 1) * this.params.size
-        // var endIndex = startIndex + this.params.size
-        // this.displayTableData = this.originTableData.slice(startIndex, endIndex)
-        // // console.log(search.value)
-        // this.count = sheetJson.length
+
         this.updateTableDisplay()
       }
 
@@ -60,7 +53,6 @@ export default {
       var startIndex = (this.params.page - 1) * this.params.size
       var endIndex = startIndex + this.params.size
       this.displayTableData = this.legalTableData.slice(startIndex, endIndex)
-      // console.log(search.value)
       this.count = this.legalTableData.length
     },
     // invoked when page size changes
@@ -76,13 +68,11 @@ export default {
       this.currentSortInfo = sortInput;
       if (sortInput.order == "ascending") {
         var columnName = sortInput.prop
-        // this.displayTableData = this.tableData.sort(this.sortByAsc(columnName))
         this.legalTableData.sort(this.compareAsc(columnName))
         console.log("ascending test:", this.legalTableData)
 
       } else if (sortInput.order == "descending") {
         var columnName = sortInput.prop
-        // this.displayTableData = this.tableData.sort(this.sortByDes(columnName))
         this.legalTableData.sort(this.compareDesc(columnName))
         console.log("descending test:", this.legalTableData)
 
@@ -90,12 +80,7 @@ export default {
         this.legalTableData.sort(this.compareAsc("ID"))
 
       }
-      // Change current page to 1
-      // this.params.page = 1;
-      // var startIndex = (this.params.page - 1) * this.params.size
-      // var endIndex = startIndex + this.params.size
-      // this.displayTableData = this.tableData.slice(startIndex, endIndex)
-      // // console.log(search.value)
+
       this.updateTableDisplay()
 
     },
@@ -124,6 +109,14 @@ export default {
           return 0;
         }
       }
+    },
+    onSubmitFilter() {
+      this.legalTableData = this.originTableData
+      var tempLegalTableData = this.legalTableData.filter((item) => {
+        return item[this.searchFilterForm.columnName] > this.searchFilterForm.compareValue
+      })
+      this.legalTableData = tempLegalTableData
+      this.updateTableDisplay()
     }
   }
 }
@@ -134,9 +127,39 @@ export default {
 <template>
 
   <div style="display: grid;">
+    <h2>Upload xlsx file</h2>
     <input type="file" @change="getMyExcelData" />
+    <h2>Search</h2>
+
     <el-input v-model="searchInputData" @input="search()" size="small" placeholder="Type ID to search" />
 
+    <h2>Filter</h2>
+
+    <div class="search-filter-box">
+      <el-form :model="searchFilterForm" class="demo-form-inline">
+
+        <el-form-item label="Column select">
+          <el-select width="100px" v-model="searchFilterForm.columnName" placeholder="baseMean" clearable>
+            <el-option label="baseMean" value="baseMean" />
+            <el-option label="log2FoldChange" value="log2FoldChange" />
+            <el-option label="lfcSE" value="lfcSE" />
+            <el-option label="stat" value="stat" />
+            <el-option label="pvalue" value="pvalue" />
+            <el-option label="padj" value="padj" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label=">">
+          <el-input v-model="searchFilterForm.compareValue" placeholder="0.55" clearable />
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" @click="onSubmitFilter">Submit</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+
+    <h2>Table</h2>
 
     <el-table id="dynamic-table" :data="displayTableData" :border=true style="width: 100%"
       :default-sort="{ prop: 'ID', order: 'ascending' }" @sort-change="sortChange">
@@ -158,23 +181,4 @@ export default {
         @current-change="handleCurrentChange" />
     </div>
   </div>
-
-  <!-- <WelcomeItem>
-    <template #icon>
-      <DocumentationIcon />
-    </template>
-<template #heading>Documentation</template>
-
-Vue’s
-<a href="https://vuejs.org/" target="_blank" rel="noopener">official documentation</a>
-provides you with all information you need to get started.
-</WelcomeItem> -->
-
-
-
-
-
-
-
-
 </template>
